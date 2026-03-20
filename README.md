@@ -13,6 +13,8 @@ I actually am very grateful to code on this Laptop that mom saved for months and
 My main project right now are:
 
   -[GooberDash](https://github.com/adamsaou/GooberDash)
+
+  -[Youth Event Ticket App](https://github.com/adamsaou/YouthEvent-Security-App)
   
   -*More to come*
 
