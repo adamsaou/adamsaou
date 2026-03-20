@@ -6,7 +6,7 @@ I am a passionate developper originating from Morocco
 
 I love creating things and learning
 
-I mainly make games on Unity, and I also mainly use HTML, CSS and Python/JS for backend, with SQL for database
+I mainly make games on Unity, and I also mainly use HTML, CSS and Python/JS for backend, with SQL for database, also use React native with Expo, and code with Type script.
 
 I actually am very grateful to code on this Laptop that mom saved for months and months to aquire it for me *(Thanks mom <3 )*
 
