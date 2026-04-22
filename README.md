@@ -18,6 +18,13 @@ My main project right now are:
   
   -*More to come*
 
+  <a href="https://heatmap.shymike.dev?id=29722&labels=true&standalone=true" title="Click to view detailed data for each day!">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://heatmap.shymike.dev?id=29722&labels=true&theme=dark">
+        <img alt="Hackatime activity heatmap" src="https://heatmap.shymike.dev?id=29722&labels=true&theme=light">
+    </picture>
+</a>
+
 
 ## Cool facts:
   -My favourite anime character is Minato
