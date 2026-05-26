@@ -24,7 +24,7 @@ My name is Adam, but online I go by **"Eleco"**. I am a passionate developer fro
 
 ### 📊 Coding Activity
 
-<p align="left">
+<p align="center">
   <a href="https://heatmap.shymike.dev?id=29722&labels=true&standalone=true" target="_blank">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://heatmap.shymike.dev?id=29722&labels=true&theme=dark">
