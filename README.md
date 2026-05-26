@@ -38,10 +38,10 @@ My main project right now are:
 
 
 <p align="left">
-  <a href="[https://www.linkedin.com/in/saoudani-adam/]" target="_blank">
+  <a href="https://www.linkedin.com/in/saoudani-adam/" target="_blank">
     <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
   </a>
-  <a href="https://itch.io/YOUR_ITCH" target="_blank">
+  <a href="https://elecomuelecsha.itch.io" target="_blank">
     <img src="https://img.shields.io/badge/Itch.io-FA5C5C?style=for-the-badge&logo=itch.io&logoColor=white" alt="Itch.io" />
   </a>
 </p>
