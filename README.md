@@ -34,6 +34,17 @@ My main project right now are:
   -I LOVE Monster drinks
   
   -And also i do acting, sports, MUNs, public speaking...etc
+
+
+
+<p align="left">
+  <a href="https://linkedin.com/in/YOUR_LINKEDIN" target="_blank">
+    <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
+  </a>
+  <a href="https://itch.io/YOUR_ITCH" target="_blank">
+    <img src="https://img.shields.io/badge/Itch.io-FA5C5C?style=for-the-badge&logo=itch.io&logoColor=white" alt="Itch.io" />
+  </a>
+</p>
 <!--
 **adamsaou/adamsaou** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 
