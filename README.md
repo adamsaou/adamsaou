@@ -16,8 +16,10 @@ My name is Adam, but online I go by **"Eleco"**. I am a passionate developer fro
 
 ### 🚀 Main Projects
 
-*   🎮 **[GooberDash](https://github.com/adamsaou/GooberDash)** — Unity Game Project
-*   📱 **[Youth Event Ticket App](https://github.com/adamsaou/YouthEvent-Security-App)** — React Native & Expo Mobile App
+*   🤖 **[ODC-WRO2026](https://github.com/adamsaou/ODC-WRO2026)** — Robotics development for the World Robot Olympiad 2026
+*   🏆 **[Razor-esports](https://github.com/adamsaou/Razor-esports)** — Esports platform / organization project
+*   💡 **[3andiBlastiCode](https://github.com/adamsaou/3andiBlastiCode)** — Web/Mobile application project
+*   🧠 **[IOI-Prep](https://github.com/adamsaou/IOI-Prep)** — Competitive programming resources and training for the International Olympiad in Informatics
 *   *...and more exciting things to come!*
 
 ---
