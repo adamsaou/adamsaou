@@ -18,7 +18,7 @@ My name is Adam, but online I go by **"Eleco"**. I am a passionate developer fro
 
 *    **[ODC-WRO2026](https://github.com/adamsaou/ODC-WRO2026)** — Robotics development for the World Robot Olympiad 2026
 *    **[Razor-esports](https://github.com/adamsaou/Razor-esports)** — Esports platform / organization project
-*    **[3andiBlastiCode](https://github.com/adamsaou/3andiBlastiCode)** — Web/Mobile application project
+*    **[3andiBlastiCode](https://github.com/adamsaou/3andiBlastiCode)** — FIRST Robotics (FTC) code for team #28552
 *    **[IOI-Prep](https://github.com/adamsaou/IOI-Prep)** — Competitive programming resources and training for the International Olympiad in Informatics
 *   *...and more exciting things to come!*
 
