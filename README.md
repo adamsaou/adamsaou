@@ -2,14 +2,16 @@
 
 I go by **Eleco** online. Developer from Morocco 🇲🇦
 
-- On the **Moroccan National Debate Team**
 - Previously a **software engineering intern at a YC startup**
-- Currently building **[Nook](https://nook-study.com)**, a study platform for students and hobbyists
-- Messing around with **[Claven](https://claven.dev)**, a code editor I'm writing from scratch, just for fun
+- Currently working on **B2B software**
+- Doing **competitive programming** in C++, training for the informatics olympiad ([IOI-Prep](https://github.com/adamsaou/IOI-Prep) · [Codeforces](https://codeforces.com/profile/Adam.Saoudani))
+- On the **Moroccan National Debate Team**
+
+### what i'm building
 
 <p align="center">
-  <a href="https://nook-study.com"><img src="assets/nook.svg" width="49%" alt="Nook: a study platform for students and hobbyists" /></a>
-  <a href="https://claven.dev"><img src="assets/claven.svg" width="49%" alt="Claven: a code editor, built from scratch" /></a>
+  <a href="https://nook-study.com"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/nook-dark.svg" /><img src="assets/nook-light.svg" width="49%" alt="Nook: a calm focus app that gets you started" /></picture></a>
+  <a href="https://claven.dev"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/claven-dark.svg" /><img src="assets/claven-light.svg" width="49%" alt="Claven: a code editor, built from scratch" /></picture></a>
 </p>
 
 ### my setup

@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """Render the profile README's SVG assets in the current Caelestia colour scheme.
 
-Usage: python scripts/build.py   (needs `pip install fonttools brotli`)
+Usage:
+    uv venv --system-site-packages scripts/.cache/venv
+    uv pip install --python scripts/.cache/venv fonttools brotli
+    scripts/.cache/venv/bin/python scripts/build.py
 
-Colours come from ~/.local/state/caelestia/scheme.json, so re-running this after a
-wallpaper change re-themes the README. Rubik is subset and
-embedded so the SVGs render identically for everyone.
+Colours are seeded from the primary colour in ~/.local/state/caelestia/scheme.json and
+expanded into a dark and a light Material scheme with materialyoucolor (the library
+Caelestia itself uses), so the cards follow GitHub's light/dark mode and re-running this
+after a wallpaper change re-themes the README. Rubik is subset and embedded so the SVGs
+render identically for everyone.
 """
 
 import base64
@@ -16,6 +21,10 @@ import re
 import urllib.request
 from pathlib import Path
 
+from materialyoucolor.dynamiccolor.material_dynamic_colors import MaterialDynamicColors
+from materialyoucolor.hct import Hct
+from materialyoucolor.scheme.scheme_tonal_spot import SchemeTonalSpot
+from PIL import Image
 from fontTools.subset import Options, Subsetter
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
@@ -26,33 +35,30 @@ CACHE = ROOT / "scripts" / ".cache"
 SCHEME = Path.home() / ".local/state/caelestia/scheme.json"
 
 RUBIK_URL = "https://github.com/google/fonts/raw/main/ofl/rubik/Rubik%5Bwght%5D.ttf"
+NOOK_ICON_URL = "https://nook-study.com/branding/icon-512.png"
 ICON_URL = (
     "https://raw.githubusercontent.com/google/material-design-icons/master/"
     "symbols/web/{0}/materialsymbolsrounded/{0}_24px.svg"
 )
 CHARS = "".join(chr(c) for c in range(32, 127)) + "·—’↗"
 
-# Snapshot of the scheme the README was first built with, used if scheme.json is missing.
-FALLBACK = {
-    "surface": "130d0b", "surfaceContainerLow": "1a110f", "surfaceContainer": "221714",
-    "surfaceContainerHigh": "291d1a", "surfaceContainerHighest": "30231f",
-    "onSurface": "f9e0da", "onSurfaceVariant": "bca6a1", "outline": "84716c",
-    "outlineVariant": "554440", "primary": "f9b7a6", "onPrimary": "613428",
-    "primaryContainer": "764639", "onPrimaryContainer": "ffdbd3",
-    "secondaryContainer": "51342d", "onSecondaryContainer": "dfb6ac", "tertiary": "ffe1b3",
-    "tertiaryContainer": "f8d291", "onTertiaryContainer": "604613",
-}
+# Primary of the scheme the README was first built with, used if scheme.json is missing.
+FALLBACK_SEED = "f9b7a6"
 
 
-def load_colours():
+def load_seed():
     try:
-        colours = json.loads(SCHEME.read_text())["colours"]
+        return json.loads(SCHEME.read_text())["colours"]["primary"]
     except (OSError, KeyError, ValueError):
-        colours = {}
-    return {k: "#" + colours.get(k, v) for k, v in FALLBACK.items()}
+        return FALLBACK_SEED
 
 
-C = load_colours()
+def palette(seed, dark):
+    scheme = SchemeTonalSpot(Hct.from_int(int("ff" + seed, 16)), dark, 0.0)
+    return {c.name: "#%06x" % (c.get_argb(scheme) & 0xFFFFFF) for c in MaterialDynamicColors().all_colors}
+
+
+SEED = load_seed()
 logging.getLogger("fontTools").setLevel(logging.ERROR)
 
 
@@ -119,26 +125,52 @@ def document(w, h, body, fonts, extra_css=""):
             f"<style>{css}</style>{body}</svg>\n")
 
 
-def project(name, desc, link):
-    W, H = 490, 150
+def nook_icon(x, y, size):
+    """Nook's app icon from its site, downscaled to 2x and embedded."""
+    img = Image.open(fetch(NOOK_ICON_URL, CACHE / "nook-icon.png")).convert("RGB")
+    buf = io.BytesIO()
+    img.resize((size * 2, size * 2), Image.LANCZOS).save(buf, "PNG", optimize=True)
+    data = base64.b64encode(buf.getvalue()).decode()
+    return f'<image x="{x}" y="{y}" width="{size}" height="{size}" href="data:image/png;base64,{data}"/>'
+
+
+def claven_icon(x, y, size):
+    """Claven's mark (claven.dev/favicon.svg) on its site background."""
+    s = size * 0.55 / 80  # the mark spans 80 units of its 96-unit viewBox
+    o = size / 2 - 48 * s
+    return (f'<rect x="{x}" y="{y}" width="{size}" height="{size}" fill="#0F1115"/>'
+            f'<g transform="translate({x + o:.2f} {y + o:.2f}) scale({s:.4f})">'
+            '<path d="M8 8 H62 L34 88 H8 Z" fill="#F5F3EE"/><path d="M72 8 H88 V88 H44 Z" fill="#FF5A2B"/></g>')
+
+
+def project(slug, name, desc, link, app_icon, C):
+    W, H, I = 490, 150, 64
+    ix, iy = W - 32 - I, (H - I) // 2
     b = f'<rect width="{W}" height="{H}" rx="28" fill="{C["surfaceContainer"]}"/>'
     b += text(32, 64, name, BOLD, 30, C["onSurface"])
-    assert SANS.width(desc, 16) <= W - 64, f"{name}: description too long"
+    assert SANS.width(desc, 16) <= ix - 24 - 32, f"{name}: description too long"
     b += text(32, 94, desc, SANS, 16, C["onSurfaceVariant"])
     b += text(32, 124, link, BOLD, 14, C["primary"])
     b += icon("arrow_outward", 32 + BOLD.width(link, 14) + 4, 110, 16, C["primary"])
+    b += f'<clipPath id="{slug}-icon"><rect x="{ix}" y="{iy}" width="{I}" height="{I}" rx="16"/></clipPath>'
+    b += f'<g clip-path="url(#{slug}-icon)">{app_icon(ix, iy, I)}</g>'
+    b += (f'<rect x="{ix + 0.5}" y="{iy + 0.5}" width="{I - 1}" height="{I - 1}" rx="15.5" fill="none" '
+          f'stroke="{C["outlineVariant"]}"/>')
     return document(W, H, b, [SANS, BOLD])
 
 
 def main():
     ASSETS.mkdir(exist_ok=True)
-    out = {
-        "nook.svg": project("Nook", "A study platform for students and hobbyists.", "nook-study.com"),
-        "claven.svg": project("Claven", "A code editor, built from scratch.", "claven.dev"),
-    }
+    out = {}
+    for mode in "dark", "light":
+        C = palette(SEED, mode == "dark")
+        out[f"nook-{mode}.svg"] = project("nook", "Nook", "A calm focus app that gets you started.",
+                                          "nook-study.com", nook_icon, C)
+        out[f"claven-{mode}.svg"] = project("claven", "Claven", "A code editor, built from scratch.",
+                                            "claven.dev", claven_icon, C)
     for name, svg in out.items():
         (ASSETS / name).write_text(svg)
-        print(f"{name:14} {len(svg) / 1024:6.1f} KiB")
+        print(f"{name:18} {len(svg) / 1024:6.1f} KiB")
 
 
 if __name__ == "__main__":
