@@ -12,6 +12,10 @@ Caelestia itself uses), so the cards follow GitHub's light/dark mode and re-runn
 after a wallpaper change re-themes the README. Rubik is subset and embedded so the SVGs
 render identically for everyone.
 
+laptop-terminal.svg is foot as it opens on the main laptop: Caelestia's greeting and a
+fastfetch box of the laptop's specs, in the terminal colours Caelestia writes into foot and the
+locally installed JetBrains Mono Nerd Font that foot uses.
+
 hp-terminal.svg is the old HP laptop's fastfetch in its Ghostty window. Its colours are
 read off a photo of that screen, so it stays fixed, and its fish logo is the braille in
 scripts/hp-fish.txt, recovered dot by dot from the same photo.
@@ -42,6 +46,7 @@ FISH = ROOT / "scripts" / "hp-fish.txt"
 
 RUBIK_URL = "https://github.com/google/fonts/raw/main/ofl/rubik/Rubik%5Bwght%5D.ttf"
 MONO_URL = "https://github.com/google/fonts/raw/main/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf"
+NERD_FONT = "/usr/share/fonts/TTF/JetBrainsMonoNerdFont-{}.ttf"
 NOOK_ICON_URL = "https://nook-study.com/branding/icon-512.png"
 ICON_URL = (
     "https://raw.githubusercontent.com/google/material-design-icons/master/"
@@ -53,11 +58,15 @@ CHARS = "".join(chr(c) for c in range(32, 127)) + "·—’↗"
 FALLBACK_SEED = "f9b7a6"
 
 
-def load_seed():
+def load_scheme():
     try:
-        return json.loads(SCHEME.read_text())["colours"]["primary"]
+        return json.loads(SCHEME.read_text())["colours"]
     except (OSError, KeyError, ValueError):
-        return FALLBACK_SEED
+        return {}
+
+
+def load_seed():
+    return load_scheme().get("primary", FALLBACK_SEED)
 
 
 def palette(seed, dark):
@@ -118,6 +127,40 @@ SANS = rubik(400)
 BOLD = rubik(600)
 MONO = mono(400)
 MONO_BOLD = mono(700)
+
+# icon, key, value per row; the icons are Nerd Font glyphs, and the first two columns' worth
+# reuse the ones in Caelestia's fastfetch config
+LAPTOP_SPECS = (
+    [("\U000f0322", "laptop", "HP Laptop 15 (fc0xxx)"),
+     ("", "cpu", "AMD Ryzen 7 7730U (8C/16T)"),
+     ("\U000f08ae", "gpu", "AMD Radeon (integrated)"),
+     ("", "mem", "10.31 GiB / 14.96 GiB"),
+     ("\U000f02ca", "disk", "512 GB Samsung NVMe, btrfs"),
+     ("\U000f0379", "screen", '15.6" 1366x768'),
+     ("\U000f0379", "monitor", 'Dell P2419HC 24" 1080p'),
+     ("", "uptime", "1 day, 19 hours")],
+    [("\U000f0ec0", "distro", "CachyOS"),
+     ("", "kernel", "7.2.9-1-cachyos"),
+     ("", "wm", "Hyprland 0.56 (Wayland)"),
+     ("", "de", "Caelestia shell"),
+     ("", "term", "foot 1.28"),
+     ("\U000f023a", "shell", "fish 4.9"),
+     ("", "editor", "Neovim 0.12"),
+     ("", "pkgs", "1310 (pacman)")],
+)
+# colour per row, in the same order Caelestia's fastfetch config colours its rows
+ROW_COLOURS = ["primary", None, "primary", "secondary", None, "primary", None, "tertiary"]
+GREETING = r"""     ______           __          __  _
+    / ____/___ ____  / /__  _____/ /_(_)___ _
+   / /   / __ `/ _ \/ / _ \/ ___/ __/ / __ `/
+  / /___/ /_/ /  __/ /  __(__  ) /_/ / /_/ /
+  \____/\__,_/\___/_/\___/____/\__/_/\__,_/""".splitlines()
+NERD_CHARS = CHARS + "╭╮╰╯─│◎⌂" + "".join(icon for box in LAPTOP_SPECS for icon, _, _ in box)
+NERD = Font("nerd400", TTFont(NERD_FONT.format("Regular")), NERD_CHARS)
+NERD_BOLD = Font("nerd700", TTFont(NERD_FONT.format("Bold")), NERD_CHARS)
+# Caelestia's terminal colours as of the last build, used if scheme.json is missing
+FALLBACK_TERM = {"primary": "d1bfeb", "secondary": "cdc2db", "tertiary": "ffd8ed", "surface": "0f0d12",
+                 "onSurface": "ebe3ef", "term4": "a4a6d8", "term7": "e8d3de", "term11": "fff0f6"}
 
 
 def icon(name, x, y, size, fill):
@@ -184,10 +227,14 @@ HP_PALETTE = ["#e9eef8", "#e9eef8", "#e9eef8", "#7bd6ec", "#e9eef8", "#e9eef8", 
 BRAILLE = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (0, 3), (1, 3)]
 
 
-def line(x, y, parts, size):
-    """One line of terminal text, each (text, font, colour) part in its own tspan."""
-    spans = "".join(f'<tspan font-family="{f.family}" fill="{c}">{s.replace("&", "&amp;").replace("<", "&lt;")}</tspan>'
-                    for s, f, c in parts)
+def line(x, y, parts, size, cw=None):
+    """One line of terminal text, each (text, font, colour) part in its own tspan. Given a cell
+    width, each part is pinned to its column, so wide Nerd Font icons can't push the rest along."""
+    spans, col = "", 0
+    for s, f, c in parts:
+        at = f' x="{x + col * cw:.1f}"' if cw else ""
+        spans += f'<tspan{at} font-family="{f.family}" fill="{c}">{s.replace("&", "&amp;").replace("<", "&lt;")}</tspan>'
+        col += len(s)
     return f'<text x="{x}" y="{y}" font-size="{size}" xml:space="preserve">{spans}</text>'
 
 
@@ -242,7 +289,58 @@ def chrome(W, bar, C):
     return b
 
 
-def terminal():
+CURSOR_CSS = ("@keyframes blink{50%{opacity:0}}.cursor{animation:blink 1.1s steps(1) infinite}"
+              "@media (prefers-reduced-motion:reduce){.cursor{animation:none}}")
+
+
+def fastfetch_box(rows, C, width=26):
+    """Caelestia's fastfetch layout: a rounded box, icon and key on the left, value right-aligned."""
+    edge = "─" * (width + 14)
+    lines = [[("╭" + edge + "╮", NERD_BOLD, C["term7"])]]
+    for (icon, key, value), colour in zip(rows, ROW_COLOURS):
+        c = C[colour] if colour else None
+        lines.append([("│ ", NERD_BOLD, C["term7"]), (icon, NERD_BOLD, c or C["term7"]),
+                      ("  " + key.ljust(7), NERD_BOLD, C["term7"]),
+                      ("  " + value.rjust(width), NERD, c or C["onSurface"]), (" │", NERD, C["term7"])])
+    lines.append([("╰" + edge + "╯", NERD_BOLD, C["term7"])])
+    return lines
+
+
+def foot_terminal():
+    """foot on the main laptop as it opens: Caelestia's greeting, fastfetch, then the starship prompt."""
+    C = {k: "#" + v for k, v in {**FALLBACK_TERM, **load_scheme()}.items()}
+    size, lh, pad = 14, 19, 25
+    cw = NERD.width("m", size)
+    left, right = (fastfetch_box(rows, C) for rows in LAPTOP_SPECS)
+    lines = [[(s, NERD, C["primary"])] for s in GREETING] + [[]]
+    lines += [[("     ", NERD, C["onSurface"])] + a + [("   ", NERD, C["onSurface"])] + b for a, b in zip(left, right)]
+    lines += [[]]
+    cols = max(sum(len(s) for s, _, _ in parts) for parts in lines)
+    W = round(2 * pad + cols * cw)
+    H = 2 * pad + (len(lines) + 1) * lh
+
+    b = (f'<defs><radialGradient id="foot-glow" cx="0.85" cy="0" r="0.9"><stop offset="0" stop-color="{C["primary"]}" '
+         f'stop-opacity="0.16"/><stop offset="1" stop-color="{C["primary"]}" stop-opacity="0"/></radialGradient>'
+         f'<radialGradient id="foot-glow2" cx="0.05" cy="1" r="0.7"><stop offset="0" stop-color="{C["tertiary"]}" '
+         f'stop-opacity="0.08"/><stop offset="1" stop-color="{C["tertiary"]}" stop-opacity="0"/></radialGradient></defs>'
+         f'<rect width="{W}" height="{H}" rx="15" fill="{C["surface"]}"/>'
+         f'<rect width="{W}" height="{H}" rx="15" fill="url(#foot-glow)"/><rect width="{W}" height="{H}" rx="15" fill="url(#foot-glow2)"/>')
+    for i, parts in enumerate(lines):
+        if parts:
+            b += line(pad, pad + 14 + i * lh, parts, size, cw)
+    y = pad + 14 + len(lines) * lh
+    b += (f'<text x="{pad}" y="{y}" font-family="{NERD_BOLD.family}" font-size="{size}" font-style="italic" '
+          f'fill="{C["term11"]}">◎</text>')
+    b += f'<rect class="cursor" x="{pad + 2 * cw:.1f}" y="{y - 13}" width="1.5" height="17" fill="{C["secondary"]}"/>'
+    b += (f'<text x="{W - pad}" y="{y}" font-family="{NERD.family}" font-size="{size}" font-style="italic" '
+          f'text-anchor="end" xml:space="preserve"><tspan fill="{C["term4"]}">⌂</tspan>'
+          f'<tspan fill="{C["term7"]}" fill-opacity="0.6"> 12:43</tspan></text>')
+    b += (f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="14.5" fill="none" stroke="{C["primary"]}" '
+          f'stroke-opacity="0.9"/>')
+    return document(W, H, b, [NERD, NERD_BOLD], CURSOR_CSS)
+
+
+def hp_terminal():
     """The old HP's fastfetch, as it sits in its Ghostty window."""
     C = HP
     size, lh, bar, pitch = 14, 20, 40, 3.6
@@ -295,14 +393,12 @@ def terminal():
     p, end = prompt(24, y, C)
     b += p + f'<rect class="cursor" x="{end + 12}" y="{y + 3}" width="{cw:.1f}" height="18" fill="{C["fg"]}"/>'
     b += f'</g><rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="11.5" fill="none" stroke="#ffffff" stroke-opacity="0.1"/>'
-    css = ("@keyframes blink{50%{opacity:0}}.cursor{animation:blink 1.1s steps(1) infinite}"
-           "@media (prefers-reduced-motion:reduce){.cursor{animation:none}}")
-    return document(W, H, b, [MONO, MONO_BOLD], css)
+    return document(W, H, b, [MONO, MONO_BOLD], CURSOR_CSS)
 
 
 def main():
     ASSETS.mkdir(exist_ok=True)
-    out = {"hp-terminal.svg": terminal()}
+    out = {"laptop-terminal.svg": foot_terminal(), "hp-terminal.svg": hp_terminal()}
     for mode in "dark", "light":
         C = palette(SEED, mode == "dark")
         out[f"nook-{mode}.svg"] = project("nook", "Nook", "A calm focus app that gets you started.",

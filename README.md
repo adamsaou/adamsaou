@@ -16,23 +16,7 @@ I go by **Eleco** online. Developer from Morocco 🇲🇦
 
 ### my setup
 
-```
-eleco@cachyos
-─────────────
-laptop    HP Laptop 15 (fc0xxx)
-cpu       AMD Ryzen 7 7730U (8 cores / 16 threads)
-gpu       AMD Radeon (integrated)
-ram       16 GB
-storage   512 GB Samsung NVMe, btrfs
-displays  15.6" 1366x768 + Dell P2419HC 24" 1080p
-
-os        CachyOS
-kernel    linux-cachyos 7.2
-wm        Hyprland (Wayland)
-shell     Caelestia
-terminal  foot + fish
-editor    Neovim
-```
+<img src="assets/laptop-terminal.svg" width="100%" alt="foot on CachyOS: HP Laptop 15 (fc0xxx), AMD Ryzen 7 7730U, AMD Radeon integrated graphics, 16 GB RAM, 512 GB Samsung NVMe (btrfs), 15.6-inch 1366x768 screen plus a Dell P2419HC 24-inch monitor, Hyprland with the Caelestia shell, fish, Neovim" />
 
 > *This is the laptop my mom saved up for months and months to get me. Thanks, mom ❤️*
 
