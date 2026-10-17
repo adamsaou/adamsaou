@@ -11,6 +11,10 @@ expanded into a dark and a light Material scheme with materialyoucolor (the libr
 Caelestia itself uses), so the cards follow GitHub's light/dark mode and re-running this
 after a wallpaper change re-themes the README. Rubik is subset and embedded so the SVGs
 render identically for everyone.
+
+hp-terminal.svg is the old HP laptop's fastfetch in its Ghostty window. Its colours are
+read off a photo of that screen, so it stays fixed, and its fish logo is the braille in
+scripts/hp-fish.txt, recovered dot by dot from the same photo.
 """
 
 import base64
@@ -34,7 +38,10 @@ ASSETS = ROOT / "assets"
 CACHE = ROOT / "scripts" / ".cache"
 SCHEME = Path.home() / ".local/state/caelestia/scheme.json"
 
+FISH = ROOT / "scripts" / "hp-fish.txt"
+
 RUBIK_URL = "https://github.com/google/fonts/raw/main/ofl/rubik/Rubik%5Bwght%5D.ttf"
+MONO_URL = "https://github.com/google/fonts/raw/main/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf"
 NOOK_ICON_URL = "https://nook-study.com/branding/icon-512.png"
 ICON_URL = (
     "https://raw.githubusercontent.com/google/material-design-icons/master/"
@@ -73,13 +80,13 @@ def fetch(url, dest):
 class Font:
     """A static font face: measures text and embeds itself as a subset woff2."""
 
-    def __init__(self, family, ttfont):
+    def __init__(self, family, ttfont, chars=CHARS):
         self.family = family
         opts = Options()
         opts.flavor = "woff2"
         opts.layout_features = ["kern", "liga"]
         sub = Subsetter(opts)
-        sub.populate(text=CHARS)
+        sub.populate(text=chars)
         sub.subset(ttfont)
         self.cmap = ttfont.getBestCmap()
         self.hmtx = ttfont["hmtx"]
@@ -102,8 +109,15 @@ def rubik(weight):
     return Font(f"rubik{weight}", instantiateVariableFont(var, {"wght": weight}))
 
 
+def mono(weight):
+    var = TTFont(fetch(MONO_URL, CACHE / "JetBrainsMono.ttf"))
+    return Font(f"mono{weight}", instantiateVariableFont(var, {"wght": weight}), CHARS + "°")
+
+
 SANS = rubik(400)
 BOLD = rubik(600)
+MONO = mono(400)
+MONO_BOLD = mono(700)
 
 
 def icon(name, x, y, size, fill):
@@ -159,9 +173,136 @@ def project(slug, name, desc, link, app_icon, C):
     return document(W, H, b, [SANS, BOLD])
 
 
+HP = {
+    "top": "#0a1638", "bottom": "#1a49b8", "bar": "#09122e", "chrome": "#b8c4de",
+    "fg": "#e9eef8", "fish": "#7bd6ec", "green": "#72e08f", "os": "#7fe6c6", "hw": "#8fd8f6",
+    "pink": "#ff7f9f", "pill": "#a7c7ff", "pill2": "#d8e5ff", "ink": "#0a1638",
+}
+# fastfetch's colour row, as that terminal's palette draws it
+HP_PALETTE = ["#e9eef8", "#e9eef8", "#e9eef8", "#7bd6ec", "#e9eef8", "#e9eef8", "#ff8fa8"]
+# braille bit i raises the dot at (column, row) BRAILLE[i] of its 2x4 cell
+BRAILLE = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (0, 3), (1, 3)]
+
+
+def line(x, y, parts, size):
+    """One line of terminal text, each (text, font, colour) part in its own tspan."""
+    spans = "".join(f'<tspan font-family="{f.family}" fill="{c}">{s.replace("&", "&amp;").replace("<", "&lt;")}</tspan>'
+                    for s, f, c in parts)
+    return f'<text x="{x}" y="{y}" font-size="{size}" xml:space="preserve">{spans}</text>'
+
+
+def fish(x, y, pitch, fill):
+    """The fastfetch logo, one round dot per raised braille point."""
+    d = "".join(f"M{2 * col + dx} {4 * row + dy}h0"
+                for row, text_line in enumerate(FISH.read_text().splitlines())
+                for col, ch in enumerate(text_line)
+                for i, (dx, dy) in enumerate(BRAILLE) if (ord(ch) - 0x2800) >> i & 1)
+    return (f'<path transform="translate({x} {y}) scale({pitch})" d="{d}" fill="none" stroke="{fill}" '
+            f'stroke-width="0.5" stroke-linecap="round"/>')
+
+
+def prompt(x, y, C):
+    """The HP's bash prompt: user and path segments, two chevrons, then the clock."""
+    user, path, clock = "pheonix1", "~", "23:12"
+    w1 = 30 + MONO.width(user, 13) + 8
+    w2 = MONO.width(path, 13) + 26
+    x2, x3 = x + w1, x + w1 + w2
+    b = f'<path d="M{x2} {y}H{x3}l10 12l-10 12H{x2}Z" fill="{C["pill2"]}"/>'
+    b += f'<path d="M{x + 12} {y}H{x2}l10 12l-10 12H{x + 12}a12 12 0 0 1 0-24Z" fill="{C["pill"]}"/>'
+    b += f'<circle cx="{x + 15}" cy="{y + 12}" r="6.5" fill="{C["ink"]}"/><circle cx="{x + 15}" cy="{y + 12}" r="2.5" fill="{C["pill"]}"/>'
+    b += text(x + 28, y + 17, user, MONO, 13, C["ink"])
+    b += text(x2 + 18, y + 17, path, MONO, 13, C["ink"])
+    cx = x3 + 16
+    for dx, colour in (0, C["pink"]), (7, C["green"]):
+        b += (f'<path d="M{cx + dx} {y + 4}l7 8l-7 8" fill="none" stroke="{colour}" stroke-width="3" '
+              f'stroke-linejoin="round"/>')
+    x4 = cx + 18
+    w4 = 34 + MONO.width(clock, 13)
+    b += f'<path d="M{x4} {y}H{x4 + w4 - 12}a12 12 0 0 1 0 24H{x4}l10-12Z" fill="{C["pill"]}"/>'
+    b += (f'<circle cx="{x4 + 20}" cy="{y + 12}" r="6" fill="none" stroke="{C["ink"]}" stroke-width="1.6"/>'
+          f'<path d="M{x4 + 20} {y + 8.5}V{y + 12}h3" fill="none" stroke="{C["ink"]}" stroke-width="1.6" stroke-linecap="round"/>')
+    b += text(x4 + 30, y + 17, clock, MONO, 13, C["ink"])
+    return b, x4 + w4
+
+
+def chrome(W, bar, C):
+    """Ghostty's GTK header bar: new-tab button, title, then tab overview, menu and window buttons."""
+    s = f'stroke="{C["chrome"]}" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"'
+    m = bar / 2
+    b = f'<rect width="{W}" height="{bar}" fill="{C["bar"]}"/><path d="M0 {bar}.5H{W}" stroke="#ffffff" stroke-opacity="0.08"/>'
+    b += f'<rect x="16" y="{m - 7}" width="16" height="14" rx="3" {s}/><path d="M24 {m - 3}v6M21 {m}h6M40 {m - 2}l3 3l3-3" {s}/>'
+    b += text(W / 2, m + 5, "fastfetch", MONO_BOLD, 13, C["fg"], "middle")
+    r = W - 22
+    b += f'<path d="M{r - 5} {m - 5}l10 10M{r + 5} {m - 5}l-10 10" {s}/>'
+    b += f'<rect x="{r - 41}" y="{m - 5}" width="10" height="10" rx="1.5" {s}/>'
+    b += f'<path d="M{r - 73} {m + 5}h10" {s}/>'
+    b += "".join(f'<circle cx="{r - 102}" cy="{m + dy}" r="1.4" fill="{C["chrome"]}"/>' for dy in (-5, 0, 5))
+    b += "".join(f'<rect x="{r - 140 + dx}" y="{m - 6 + dy}" width="5" height="5" rx="1" {s}/>'
+                 for dx in (0, 7) for dy in (0, 7))
+    return b
+
+
+def terminal():
+    """The old HP's fastfetch, as it sits in its Ghostty window."""
+    C = HP
+    size, lh, bar, pitch = 14, 20, 40, 3.6
+    cw = MONO.width("m", size)
+
+    def row(key, colour, *value):
+        parts = [(key.ljust(10), MONO_BOLD, colour)]
+        return parts + [(v, MONO, C["fg"]) if isinstance(v, str) else v for v in value]
+
+    info = [
+        [("pheonix1", MONO_BOLD, C["green"]), ("@", MONO, C["fg"]), ("pheonix1-HP", MONO_BOLD, C["green"])],
+        [],
+        row("OS", C["os"], "Xubuntu 24.04.4 LTS x86_64"),
+        row("Kernel", C["os"], "Linux 6.17.0-35-generic"),
+        row("Shell", C["os"], "bash 5.2.21"),
+        row("DE", C["os"], "Xfce4 4.18"),
+        row("Packages", C["os"], "1815 (dpkg), 14 (snap)"),
+        [],
+        row("CPU", C["hw"], "Intel Core i5-4300M (4) @ 3.30 GHz - ", ("57.0°C", MONO, C["green"])),
+        row("GPU", C["hw"], "Intel HD Graphics 4600 [Integrated]"),
+        row("RAM", C["hw"], "3.36 GiB / 7.65 GiB (", ("44%", MONO, C["green"]), ")"),
+        row("Disk", C["hw"], "21.95 GiB / 232.64 GiB (", ("9%", MONO, C["green"]), ") - ext4"),
+        [],
+        row("Uptime", C["pink"], "128 days(!), 8 hours, 39 mins"),
+        row("Battery", C["fg"], "60% [Discharging]"),
+        [],
+    ]
+    rows = FISH.read_text().splitlines()
+    fw, fh = (2 * max(map(len, rows)) - 1) * pitch, (4 * len(rows) - 1) * pitch
+    ix = round(32 + fw + 44)
+    W = round(ix + max(sum(len(s) for s, _, _ in parts) for parts in info) * cw + 36)
+    top = bar + 18
+    body_top = top + 24 + 26
+    body_h = (len(info) + 1) * lh
+    H = body_top + body_h + 20 + 24 + 22
+
+    b = (f'<defs><linearGradient id="hp-bg" x1="0" y1="0" x2="0.4" y2="1"><stop offset="0" stop-color="{C["top"]}"/>'
+         f'<stop offset="1" stop-color="{C["bottom"]}"/></linearGradient>'
+         f'<clipPath id="hp-win"><rect width="{W}" height="{H}" rx="12"/></clipPath></defs>'
+         f'<g clip-path="url(#hp-win)"><rect width="{W}" height="{H}" fill="url(#hp-bg)"/>{chrome(W, bar, C)}')
+    p, end = prompt(24, top, C)
+    b += p + text(end + 12, top + 17, "fastfetch", MONO, size, C["fg"])
+    b += fish(32, round(body_top + (body_h - fh) / 2, 1), pitch, C["fish"])
+    for i, parts in enumerate(info):
+        if parts:
+            b += line(ix, body_top + 14 + i * lh, parts, size)
+    dots_y = body_top + 9 + len(info) * lh
+    b += "".join(f'<circle cx="{ix + 6 + i * 22}" cy="{dots_y}" r="6" fill="{c}"/>' for i, c in enumerate(HP_PALETTE))
+    y = body_top + body_h + 20
+    p, end = prompt(24, y, C)
+    b += p + f'<rect class="cursor" x="{end + 12}" y="{y + 3}" width="{cw:.1f}" height="18" fill="{C["fg"]}"/>'
+    b += f'</g><rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="11.5" fill="none" stroke="#ffffff" stroke-opacity="0.1"/>'
+    css = ("@keyframes blink{50%{opacity:0}}.cursor{animation:blink 1.1s steps(1) infinite}"
+           "@media (prefers-reduced-motion:reduce){.cursor{animation:none}}")
+    return document(W, H, b, [MONO, MONO_BOLD], css)
+
+
 def main():
     ASSETS.mkdir(exist_ok=True)
-    out = {}
+    out = {"hp-terminal.svg": terminal()}
     for mode in "dark", "light":
         C = palette(SEED, mode == "dark")
         out[f"nook-{mode}.svg"] = project("nook", "Nook", "A calm focus app that gets you started.",

@@ -38,19 +38,4 @@ editor    Neovim
 
 My old reliable HP ran Ubuntu for years. Now it's on Xubuntu and works as the TURN relay for Nook's voice rooms:
 
-```
-pheonix1@pheonix1-HP
-────────────────────
-laptop    HP
-cpu       Intel Core i5-4300M (2 cores / 4 threads)
-gpu       Intel HD Graphics 4600 (integrated)
-ram       8 GB
-storage   250 GB, ext4
-
-os        Xubuntu 24.04 LTS
-kernel    Linux 6.17
-de        Xfce 4.18
-shell     bash
-job       coturn TURN relay
-uptime    128 days and counting
-```
+<img src="assets/hp-terminal.svg" width="100%" alt="fastfetch on pheonix1-HP: Xubuntu 24.04 LTS, Intel Core i5-4300M, Intel HD Graphics 4600, 8 GB RAM, 250 GB disk, 128 days of uptime" />
